@@ -4,25 +4,13 @@
 <meta charset="UTF-8">
 <!-- viewport-fit=cover：让页面铺满刘海屏；底部安全区在 CSS 里用 env() 处理 -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>我的 AI</title>
+<title>RESTRICTED</title>
 <style>
 /* ===================== 1. 颜色与基础样式 ===================== */
 :root {
-  --bg: #eef1f4;          /* 页面背景 */
-  --panel: #ffffff;       /* AI 气泡、输入栏背景 */
-  --ink: #1b2430;         /* 主文字 */
-  --muted: #6b7785;       /* 次要文字 */
-  --line: #d9dfe5;        /* 边框 */
-  --accent: #2f6f6a;      /* 主色（用户气泡、按钮） */
-  --accent-ink: #ffffff;  /* 主色上的文字 */
-  --danger: #b4322b;
-  --code-bg: #e9edf1;
-}
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #12171d; --panel: #1b222b; --ink: #e6ebf0; --muted: #8b97a4;
-    --line: #2b3541; --accent: #3a8780; --danger: #e5655d; --code-bg: #232c37;
-  }
+  --bg:#070b14; --panel:rgba(15,23,43,.62); --ink:#dfe8f7; --muted:#7f8fae; --line:rgba(140,170,230,.22);
+  --accent:#7aa7ff; --accent-ink:#06101f; --danger:#ff7a8a; --code-bg:rgba(8,13,28,.7);
+  color-scheme: dark;
 }
 * { box-sizing: border-box; }
 html, body { height: 100%; margin: 0; }
@@ -36,25 +24,91 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .hidden { display: none !important; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-/* ===================== 2. 登录界面 ===================== */
-#login {
-  height: 100%; display: flex; align-items: center; justify-content: center; padding: 24px;
-}
-#login form {
-  width: 100%; max-width: 340px; display: flex; flex-direction: column; gap: 12px;
-}
-#login h1 { margin: 0 0 4px; font-size: 26px; letter-spacing: .02em; }
-#login p { margin: 0 0 8px; color: var(--muted); font-size: 14px; }
-#login input {
-  font: inherit; padding: 12px 14px; border-radius: 10px;
-  border: 1px solid var(--line); background: var(--panel); color: var(--ink);
-}
-#login .primary {
-  padding: 12px; border: 0; border-radius: 10px;
-  background: var(--accent); color: var(--accent-ink); font-weight: 600;
-}
-#login .primary:disabled { opacity: .6; }
-#loginErr { color: var(--danger); font-size: 14px; min-height: 20px; }
+/* ===================== 2. 登录界面：代码编辑器开场 ===================== */
+#login { position: relative; height: 100%; display: flex; align-items: center; justify-content: center;
+  padding: 24px; overflow: hidden; background: radial-gradient(ellipse at 50% 40%, #efece5 0%, #e3dfd6 75%); }
+/* 启动画面：HUD 文字 + 十字标记 + 线条徽标描边 + 标题逐字出现 + 进度条 */
+#splash { position: absolute; inset: 0; z-index: 5; color: #e8eaec;
+  background: radial-gradient(ellipse at 50% 35%, #101214 0%, #050607 70%); transition: opacity .7s ease, visibility .7s; }
+#splash.out { opacity: 0; visibility: hidden; pointer-events: none; }
+#splash .hud { position: absolute; left: 18px; top: calc(18px + env(safe-area-inset-top, 0px)); display: flex; flex-direction: column;
+  gap: 3px; font-size: 9px; letter-spacing: .14em; color: #6b7178; opacity: 0; transition: opacity .8s; }
+#splash .hud b { color: #e8eaec; font-size: 13px; letter-spacing: .2em; }
+#splash .hud i { font-style: normal; }
+#skipBtn { position: absolute; right: 18px; top: calc(16px + env(safe-area-inset-top, 0px)); background: transparent; border: 1px solid #2a2e33;
+  color: #7b8289; font: inherit; font-size: 11px; padding: 4px 12px; letter-spacing: .1em; opacity: 0; transition: opacity .8s; }
+.xh { position: absolute; display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 8px; color: #4c5258; letter-spacing: .2em; opacity: 0; transition: opacity .8s; }
+.xh u { position: relative; display: block; width: 14px; height: 14px; }
+.xh u::before, .xh u::after { content: ""; position: absolute; background: #4c5258; }
+.xh u::before { left: 6.5px; top: 0; width: 1px; height: 14px; }
+.xh u::after { top: 6.5px; left: 0; height: 1px; width: 14px; }
+.xl { left: 14%; top: 46%; } .xr { right: 14%; top: 46%; } .xb { right: 22%; bottom: 20%; }
+#splash.s1 .hud, #splash.s1 #skipBtn, #splash.s1 .xh, #splash.s1 .load { opacity: 1; }
+#splash .center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding-bottom: 6vh; }
+#emblem { width: 120px; height: 110px; overflow: visible; transition: filter 1s; }
+#emblem .p { fill: none; stroke: url(#sg); stroke-width: 2.2; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 1;
+  transition: stroke-dashoffset 1.6s cubic-bezier(.6,0,.2,1); }
+#emblem .f { fill: #c9ced3; opacity: 0; transition: opacity .8s; }
+#splash.s2 #emblem .p { stroke-dashoffset: 0; }
+#splash.s3 #emblem .f { opacity: .9; }
+#splash.s3 #emblem { filter: drop-shadow(0 0 14px rgba(220,230,240,.45)); }
+#word { display: flex; font-size: 28px; font-weight: 600; letter-spacing: .28em; margin-right: -.28em; min-height: 1.4em; }
+#word span { opacity: 0; transform: translateY(8px); transition: opacity .5s, transform .5s; transition-delay: calc(var(--i) * 70ms); }
+#splash.s4 #word span { opacity: 1; transform: none; }
+#splash .rule { width: 0; height: 1px; background: #3a4046; transition: width 1s ease; }
+#splash.s5 .rule { width: 150px; }
+#splash .sub, #splash .sub2 { opacity: 0; transition: opacity .8s; }
+#splash .sub { font-size: 12px; letter-spacing: .5em; margin-right: -.5em; color: #aab0b6; }
+#splash .sub2 { font-size: 8px; letter-spacing: .22em; color: #5b6168; }
+#splash.s5 .sub, #splash.s5 .sub2 { opacity: 1; }
+#splash .load { position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(34px + env(safe-area-inset-bottom, 0px));
+  display: flex; flex-direction: column; align-items: center; gap: 8px; font-size: 9px; color: #5b6168; letter-spacing: .2em; opacity: 0; transition: opacity .8s; }
+.bar { width: 160px; height: 1px; background: #22262a; }
+.bar i { display: block; height: 100%; width: 0; background: #c9ced3; }
+#login .scan { position: absolute; inset: 0; pointer-events: none;
+  background: repeating-linear-gradient(0deg, rgba(0,0,0,.28) 0, rgba(0,0,0,.28) 1px, transparent 1px, transparent 3px); }
+/* ===== 登录页：浅色"访问身份确认"（启动画面之后切换到这里） ===== */
+#login .scan { display: none; }
+#rings { position: absolute; left: 50%; top: 50%; width: min(104vw, 720px); aspect-ratio: 1; z-index: 1; pointer-events: none;
+  transform: translate(-50%, -50%) scale(.94); opacity: 0; transition: opacity 1.4s ease, transform 1.4s ease; }
+#login.on #rings { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+#rings circle { fill: none; transform-box: fill-box; transform-origin: center; }
+#rings .r0 { stroke: #9a958b; stroke-width: 5; stroke-dasharray: .25 1.75; animation: spin 140s linear infinite; }
+#rings .r1 { stroke: #2a2a2a; stroke-width: 1.2; stroke-dasharray: 78 22; animation: spin 100s linear infinite; }
+#rings .r2 { stroke: #2a2a2a; stroke-width: 2.6; stroke-dasharray: 64 36; animation: spin 80s linear infinite reverse; }
+#rings .r3 { stroke: #d9783b; stroke-width: 3.4; stroke-dasharray: 44 56; animation: spin 55s linear infinite; }
+#rings .r4 { stroke: #d9783b; stroke-width: 9; opacity: .22; stroke-dasharray: 14 86; animation: spin 42s linear infinite reverse; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.lhud { position: absolute; z-index: 2; left: 18px; top: calc(18px + env(safe-area-inset-top, 0px)); display: flex; flex-direction: column;
+  gap: 3px; font-size: 9px; letter-spacing: .14em; color: #8a857b; opacity: 0; transition: opacity 1s .4s; }
+.lhud b { color: #1b1b1b; font-size: 13px; letter-spacing: .2em; }
+.lhud i { font-style: normal; }
+.foot { position: absolute; z-index: 2; left: 0; right: 0; bottom: calc(22px + env(safe-area-inset-bottom, 0px)); text-align: center;
+  font-size: 9px; letter-spacing: .22em; color: #8a857b; opacity: 0; transition: opacity 1s .4s; }
+#login.on .lhud, #login.on .foot { opacity: 1; }
+#login .idf { position: relative; z-index: 2; width: min(86vw, 340px); display: flex; flex-direction: column; align-items: center; text-align: center;
+  color: #1b1b1b; font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  transition: opacity .8s ease, transform .8s ease, visibility .8s; }
+#login .idf.off { opacity: 0; visibility: hidden; transform: translateY(10px); }
+.idf .eyebrow { font: 10px ui-monospace, Menlo, Consolas, monospace; letter-spacing: .3em; color: #6e6a63; }
+.idf h1 { margin: 8px 0 6px; font-size: 28px; font-weight: 600; letter-spacing: .16em; color: #1b1b1b; }
+.idf .hint { margin: 0; font-size: 11px; color: #7a756c; letter-spacing: .06em; }
+.idf .oline { width: 90px; height: 1px; background: #d9783b; margin: 14px 0 18px; }
+.idf .card { width: 100%; padding: 2px 14px; background: rgba(255,255,255,.38); border: 1px solid #77726a; }
+.idf .row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; font-size: 12px;
+  border-bottom: 1px solid rgba(27,27,27,.18); }
+.idf .row:last-child { border-bottom: 0; }
+.idf .row:focus-within { border-bottom-color: #d9783b; }
+.idf .row span { color: #7a756c; white-space: nowrap; }
+.idf .row b { font: 600 12px ui-monospace, Menlo, Consolas, monospace; letter-spacing: .06em; }
+#login input { width: 58%; min-width: 0; background: transparent; border: 0; outline: 0; text-align: right; color: #1b1b1b;
+  font: 16px ui-monospace, Menlo, Consolas, monospace; letter-spacing: .25em; caret-color: #d9783b; }
+#login .primary { width: 100%; margin-top: 14px; padding: 12px; border: 0; background: #1b1b1b; color: #efebe3;
+  font: inherit; font-size: 13px; letter-spacing: .5em; text-indent: .5em; }
+#login .primary:hover, #login .primary:active { background: #d9783b; color: #fff; }
+#login .primary:disabled { opacity: .5; }
+#loginErr { color: #c4421a; font-size: 12px; min-height: 20px; margin-top: 10px; }
+@media (prefers-reduced-motion: reduce) { #rings circle { animation: none; } }
 
 /* ===================== 3. 聊天界面整体布局 ===================== */
 #app { height: 100dvh; display: flex; flex-direction: column; }
@@ -144,25 +198,93 @@ header button {
 #camBox .btns { display: flex; justify-content: center; gap: 12px; margin-top: 12px; }
 #camBox .btns button { padding: 10px 22px; border-radius: 10px; border: 1px solid var(--line); background: transparent; }
 #camBox .btns .shoot { background: var(--accent); color: var(--accent-ink); border: 0; font-weight: 600; }
+
+/* ===================== 蓝色工作模式（聊天界面） ===================== */
+#login { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "PingFang SC", "Microsoft YaHei", monospace; }  /* 登录页保持等宽字体 */
+#app { position: relative; background: var(--bg); isolation: isolate; }
+#wall { position: absolute; inset: 0; z-index: 0;                       /* 背景层：默认是深蓝渐变，可换成自己的壁纸 */
+  background: radial-gradient(ellipse 70% 50% at 78% 18%, rgba(96,130,235,.38), transparent 70%),
+              radial-gradient(ellipse 60% 45% at 15% 85%, rgba(70,90,190,.30), transparent 70%),
+              linear-gradient(180deg, #0a1020, #070b14 60%, #0a0f1e); }
+header, #messages, #composer { position: relative; z-index: 1; }
+header { background: rgba(8,13,28,.55); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-bottom: 1px solid var(--line); }
+header .brand { display: flex; flex-direction: column; line-height: 1.15; font-size: 15px; letter-spacing: .22em; color: var(--ink); font-weight: 600; }
+header button { border-radius: 8px; color: #9db8f0; border-color: var(--line); background: rgba(255,255,255,.04); }
+.user .bubble { background: rgba(110,150,255,.24); color: var(--ink); border: 1px solid rgba(140,175,255,.45); border-radius: 14px 14px 4px 14px; }
+.assistant .bubble { background: var(--panel); border: 1px solid var(--line); border-left: 2px solid var(--accent); border-radius: 14px 14px 14px 4px;
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+.bubble code { color: #a9c4ff; }
+.bubble pre { border: 1px solid var(--line); border-radius: 10px; }
+.imgs img { border-radius: 10px; border: 1px solid var(--line); }
+.thumb img { border-radius: 8px; }
+.icon-btn { color: #9db8f0; border-radius: 12px; background: rgba(255,255,255,.04); }
+#composer { background: rgba(8,13,28,.6); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-top: 1px solid var(--line); }
+#input { background: rgba(255,255,255,.06); border: 1px solid var(--line); border-radius: 12px; color: var(--ink); caret-color: var(--accent); }
+#input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+#sendBtn { border-radius: 12px; background: linear-gradient(135deg, #6f9bff, #8a7dff); color: #06101f; box-shadow: 0 0 18px rgba(111,155,255,.35); }
+#sendBtn.stop { background: var(--danger); color: #fff; box-shadow: none; }
+.empty { margin: 14vh auto 0; display: flex; flex-direction: column; align-items: center; gap: 8px; color: var(--muted); text-align: center; }
+.empty .tip { margin-top: 10px; font-size: 12px; color: #7f8fae; }
+#camBox { border: 1px solid var(--line); background: rgba(12,18,34,.94); }
 </style>
 </head>
 <body>
 
-<!-- ===================== 登录界面 ===================== -->
+<!-- ===================== 登录界面：启动画面 + 登录栏 ===================== -->
 <div id="login">
-  <form id="loginForm">
-    <h1>我的 AI</h1>
-    <p>请输入访问密码</p>
-    <input id="pwd" type="password" placeholder="密码" autocomplete="current-password" required>
+  <div class="scan"></div>
+  <div id="splash">
+    <div class="hud"><b>RESTRICTED</b><span>ACCESS / CONTROL</span><i>REV 0.3 · LOCAL PROFILE</i><i>ID: RS-0001</i></div>
+    <button id="skipBtn" type="button">跳过开场</button>
+    <div class="xh xl"><u></u><small>NODE</small></div>
+    <div class="xh xr"><u></u><small>KEY</small></div>
+    <div class="xh xb"><u></u></div>
+    <div class="center">
+      <svg id="emblem" viewBox="0 0 120 110" aria-hidden="true">
+        <defs><linearGradient id="sg" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="120" y2="110">
+          <stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#7c838a"/></linearGradient></defs>
+        <path class="f" d="M60 40 L84 82 L36 82 Z"/>
+        <path class="p" pathLength="1" d="M60 6 L112 98 L8 98 Z"/>
+        <path class="p" pathLength="1" d="M60 34 L88 84 L32 84 Z"/>
+        <path class="p" pathLength="1" d="M60 52 L60 68"/>
+        <path class="p" pathLength="1" d="M22 104 L98 104"/>
+      </svg>
+      <div id="word"></div>
+      <div class="rule"></div>
+      <div class="sub">禁 区 协 议</div>
+      <div class="sub2">SINGLE-USER ACCESS CONTROL</div>
+    </div>
+    <div class="load"><span id="pct">000%</span><div class="bar"><i id="barfill"></i></div></div>
+  </div>
+  <svg id="rings" viewBox="0 0 400 400" aria-hidden="true">
+    <circle class="r0" cx="200" cy="200" r="196" pathLength="100"/>
+    <circle class="r1" cx="200" cy="200" r="186" pathLength="100"/>
+    <circle class="r2" cx="200" cy="200" r="176" pathLength="100"/>
+    <circle class="r3" cx="200" cy="200" r="160" pathLength="100"/>
+    <circle class="r4" cx="200" cy="200" r="150" pathLength="100"/>
+  </svg>
+  <div class="lhud"><b>RESTRICTED</b><span>ACCESS / CONTROL</span><i>REV 0.3 · LOCAL PROFILE</i><i>ID: RS-0001</i></div>
+  <form id="loginForm" class="idf off">
+    <div class="eyebrow">IDENTITY VERIFICATION</div>
+    <h1>访问身份确认</h1>
+    <p class="hint">确认身份后，进入私有空间。</p>
+    <div class="oline"></div>
+    <div class="card">
+      <div class="row"><span>访问身份</span><b>OWNER</b></div>
+      <div class="row"><span>档案编号</span><b>RS-0001</b></div>
+      <label class="row"><span>访问密钥</span><input id="pwd" type="password" autocomplete="current-password" aria-label="访问密码" required></label>
+    </div>
     <div id="loginErr" role="alert"></div>
-    <button class="primary" id="loginBtn" type="submit">进入</button>
+    <button class="primary" id="loginBtn" type="submit">确认身份</button>
   </form>
+  <div class="foot">IDENTITY VERIFICATION · SECURE CHANNEL</div>
 </div>
 
 <!-- ===================== 聊天界面 ===================== -->
 <div id="app" class="hidden">
+  <div id="wall"></div>
   <header>
-    <strong>我的 AI</strong>
+    <strong class="brand">RESTRICTED</strong>
     <div class="actions">
       <button id="newBtn" type="button">新对话</button>
       <button id="logoutBtn" type="button">退出</button>
@@ -237,6 +359,7 @@ function showChat() {
   $('login').classList.add('hidden');
   $('app').classList.remove('hidden');
   loadHistory();
+  try { localStorage.removeItem('ai_wallpaper'); } catch {}   // 清掉之前可能存过的壁纸
   renderAll();
 }
 function showLogin(msg) {
@@ -245,6 +368,7 @@ function showLogin(msg) {
   $('login').classList.remove('hidden');
   $('loginErr').textContent = msg || '';
   $('pwd').value = '';
+  initLoginFx();   // 重新显示登录界面时，重播特效
 }
 
 $('loginForm').addEventListener('submit', async (e) => {
@@ -261,9 +385,15 @@ $('loginForm').addEventListener('submit', async (e) => {
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.detail || '登录失败');
     localStorage.setItem(TOKEN_KEY, data.token);  // token 存 localStorage，30 天内免登录
+    $('loginErr').style.color = '#1b1b1b';
+    $('loginErr').textContent = '身份已确认';
+    await new Promise((r) => setTimeout(r, 650));   // 停一下，让"授权成功"被看到
+    $('loginErr').style.color = '';
+    $('loginErr').textContent = '';
     showChat();
   } catch (err) {
-    $('loginErr').textContent = err.message;
+    $('loginErr').style.color = '';
+    $('loginErr').textContent = '访问被拒绝：' + err.message;
   } finally {
     $('loginBtn').disabled = false;
   }
@@ -459,7 +589,7 @@ function renderAll() {
   const list = $('list');
   list.innerHTML = '';
   if (!conversationHistory.length) {
-    list.innerHTML = '<div class="empty">发消息，或拍一张题目 / 文档的照片开始吧</div>';
+    list.innerHTML = '<div class="empty"><div class="tip">发消息，或拍一张题目 / 文档的照片开始</div></div>';
   }
   conversationHistory.forEach((m) => addMessageEl(m.role, m.content));
   scrollToBottom(true);
@@ -569,11 +699,13 @@ async function send() {
     // 3) 逐块读取 SSE 流：每行形如  data: {...}
     const reader = res.body.getReader();
     const decoder = new TextDecoder();
-    let buf = '';
+    let buf = '', raw = '';                    // raw：原始返回，仅在出错时用来显示
     outer: while (true) {
       const { done, value } = await reader.read();
       if (done) break;
-      buf += decoder.decode(value, { stream: true });
+      const piece = decoder.decode(value, { stream: true });
+      if (raw.length < 400) raw += piece;
+      buf += piece;
       const lines = buf.split('\n');
       buf = lines.pop();                       // 最后一行可能不完整，留到下一轮
       for (const line of lines) {
@@ -592,7 +724,7 @@ async function send() {
       }
     }
 
-    if (!full) throw new Error('AI 没有返回内容，请重试');
+    if (!full) throw new Error('AI 没有返回内容。服务器原始返回：' + (raw.slice(0, 300) || '（空）'));
     conversationHistory.push({ role: 'assistant', content: full });
 
   } catch (err) {
@@ -635,8 +767,51 @@ function autoGrow() {
   t.style.height = Math.min(t.scrollHeight, 160) + 'px';
 }
 
+/* ---------- 登录界面开场：启动画面（按阶段加 class，CSS 负责动画） ---------- */
+const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const SPL = { timers: [], raf: 0, done: false, started: false };
+
+function reveal() {                                     // 登录栏淡入
+  $('login').classList.add('on');                       // 圆环、角落文字淡入
+  $('loginForm').classList.remove('off');
+  setTimeout(() => $('pwd').focus(), 400);
+}
+function finishSplash() {                               // 结束（播完 / 点击跳过）
+  if (SPL.done) return;
+  SPL.done = true;
+  SPL.timers.forEach(clearTimeout); cancelAnimationFrame(SPL.raf);
+  $('pct').textContent = '100%'; $('barfill').style.width = '100%';
+  $('splash').classList.add('s1', 's2', 's3', 's4', 's5', 'out');
+  setTimeout(reveal, 300);
+}
+function runSplash() {
+  const sp = $('splash');
+  $('word').innerHTML = 'RESTRICTED'.split('').map((c, i) => '<span style="--i:' + i + '">' + c + '</span>').join('');
+  const at = (ms, cls) => SPL.timers.push(setTimeout(() => sp.classList.add(cls), ms));
+  at(300, 's1');    // HUD 文字、十字标记淡入
+  at(800, 's2');    // 徽标线条描边
+  at(2300, 's3');   // 徽标填充 + 发光
+  at(2500, 's4');   // 标题逐字出现
+  at(3300, 's5');   // 分隔线 + 副标题
+  SPL.timers.push(setTimeout(finishSplash, 4900));      // 淡出，登录栏出现
+  const t0 = performance.now();
+  (function tick(now) {                                  // 进度条 0% -> 100%
+    const p = Math.max(0, Math.min(1, (now - t0 - 600) / 4000));
+    $('pct').textContent = String(Math.round(p * 100)).padStart(3, '0') + '%';
+    $('barfill').style.width = (p * 100) + '%';
+    if (p < 1 && !SPL.done) SPL.raf = requestAnimationFrame(tick);
+  })(t0);
+  sp.addEventListener('pointerdown', finishSplash, { once: true });   // 点屏幕任意处 / 跳过按钮 = 跳过
+}
+function initLoginFx() {
+  if (SPL.started) { reveal(); return; }                // 已播放过（比如退出登录后再回来）：直接显示登录栏
+  SPL.started = true;
+  if (REDUCED) { SPL.done = true; $('splash').classList.add('out'); reveal(); return; }  // 系统开了"减少动态效果"
+  runSplash();
+}
+
 /* ---------- 启动：有 token 就直接进聊天，否则显示登录 ---------- */
-if (localStorage.getItem(TOKEN_KEY)) showChat();
+if (localStorage.getItem(TOKEN_KEY)) showChat(); else initLoginFx();
 </script>
 </body>
 </html>
