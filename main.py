@@ -227,6 +227,8 @@ async def chat(request: Request, authorization: str | None = Header(default=None
     headers = {
         "Authorization": f"Bearer {DEEPSEEK_API_KEY}",  # Key 只在这里出现
         "Content-Type": "application/json",
+        # 要求 DeepSeek 不要压缩返回内容，避免把压缩后的乱码原样转发给浏览器
+        "Accept-Encoding": "identity",
     }
 
     client = httpx.AsyncClient(timeout=httpx.Timeout(180.0, connect=15.0))
@@ -253,10 +255,15 @@ async def chat(request: Request, authorization: str | None = Header(default=None
             msg = body
         raise HTTPException(status_code=502, detail=f"DeepSeek 错误 {upstream.status_code}: {msg}")
 
+    # 只记录响应头信息（不记录对话内容），方便在 Render 日志里排查
+    log.info("DeepSeek 200 content-type=%s content-encoding=%s",
+             upstream.headers.get("content-type"), upstream.headers.get("content-encoding"))
+
     async def relay():
         """把 DeepSeek 的流式数据逐块转发给浏览器。"""
         try:
-            async for chunk in upstream.aiter_raw():
+            # aiter_bytes 会自动解压；之前用的 aiter_raw 不解压，压缩时浏览器会收到乱码
+            async for chunk in upstream.aiter_bytes():
                 yield chunk
         finally:
             await upstream.aclose()
