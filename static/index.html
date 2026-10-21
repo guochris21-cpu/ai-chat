@@ -532,6 +532,29 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && !$('camModal').classList.contains('hidden')) closeCamera();
 });
 
+/* ---------- 电脑端：Ctrl+V（Mac 是 Cmd+V）直接粘贴截图，或把图片拖进页面 ---------- */
+document.addEventListener('paste', async (e) => {
+  if ($('app').classList.contains('hidden')) return;           // 还没登录时不处理
+  const items = (e.clipboardData && e.clipboardData.items) || [];
+  const files = [];
+  for (const it of items) {
+    if (it.kind === 'file' && it.type.startsWith('image/')) {
+      const f = it.getAsFile();
+      if (f) files.push(f);
+    }
+  }
+  if (!files.length) return;                                    // 剪贴板里没有图片：按普通文字粘贴
+  e.preventDefault();                                           // 有图片：拦下来，当作选图处理（同样会压缩、显示预览）
+  await addImageFiles(files);
+  $('input').focus();
+});
+document.addEventListener('dragover', (e) => { e.preventDefault(); });
+document.addEventListener('drop', async (e) => {
+  e.preventDefault();
+  if ($('app').classList.contains('hidden')) return;
+  await addImageFiles([...e.dataTransfer.files]);
+});
+
 /* ---------- E. 渲染消息 ---------- */
 function escapeHTML(s) {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
