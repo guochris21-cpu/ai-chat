@@ -555,6 +555,16 @@ document.addEventListener('drop', async (e) => {
   await addImageFiles([...e.dataTransfer.files]);
 });
 
+/* ---------- 复制聊天内容时只复制纯文字（去掉颜色/背景），粘贴到 Google 文档、Word 里就不会是白字了 ---------- */
+document.addEventListener('copy', (e) => {
+  const sel = window.getSelection();
+  if (!sel || sel.isCollapsed || !sel.anchorNode) return;
+  const el = sel.anchorNode.nodeType === 1 ? sel.anchorNode : sel.anchorNode.parentElement;
+  if (!el || !el.closest('#list')) return;                      // 只处理聊天消息区域，输入框里复制不受影响
+  e.clipboardData.setData('text/plain', sel.toString());
+  e.preventDefault();
+});
+
 /* ---------- E. 渲染消息 ---------- */
 function escapeHTML(s) {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
